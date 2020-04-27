@@ -1,0 +1,52 @@
+{
+  "manifest_version": 2,
+  "name": "Escape 21",
+  "description": "Build an Extension!",
+  "version": "0.1",
+  "permissions": [
+    "management",
+    "tabs",
+    "idle",
+    "unlimitedStorage",
+    "webNavigation",
+    "storage",
+    "declarativeContent",
+    "contextMenus",
+    "chrome://favicon/",
+    "browser_action"
+  ],
+  "background": {
+    "scripts": [
+      "background.js"
+    ],
+    "persistent": false
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "content.js"
+      ]
+    }
+  ],
+  "options_ui": {
+    "page": "options/options.html",
+    "open_in_tab": false
+  },
+  "browser_action": {
+    "default_name": "Browsing stats",
+    "default_icon": "popup/popup.png",
+    "default_popup": "popup/popup.html"
+  },
+  "chrome_url_overrides": {
+    "newtab": "dashboard/dashboard.html"
+  },
+  "chrome_settings_overrides": {
+    "homepage": "http://www.homepage.com",
+    "startup_pages": [
+      "http://www.startup.com"
+    ]
+  }
+}
