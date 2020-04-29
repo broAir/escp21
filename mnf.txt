@@ -42,6 +42,17 @@
     "default_popup": "popup/popup.html",
     "default_title": "This is a tooltip"
   },
+  // icons
+  "icons": {
+    "16": "extension_icon16.png",
+    "32": "extension_icon32.png",
+    "48": "extension_icon48.png",
+    "128": "extension_icon128.png"
+  },
+  // new tab overrides
+  "chrome_url_overrides": {
+    "newtab": "dashboard/dashboard.html"
+  },
   "chrome_settings_overrides": {
     "homepage": "http://www.homepage.com",
     "startup_pages": [

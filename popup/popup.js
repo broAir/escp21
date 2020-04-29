@@ -100,12 +100,12 @@ var getColorsFromTheCanvas = function (canvas) {
     if (a.percentage() > b.percentage()) return -1;
     return 0;
   }).slice(0, resultCount);
-    // .sort(function (a, b) {
-    //   if (a.iswhite || b.iswhite) return -1;
-    //   if (a.r < b.r) return -1;
-    //   if (a.r > b.r) return 1;
-    //   return 0;
-    // });
+  // .sort(function (a, b) {
+  //   if (a.iswhite || b.iswhite) return -1;
+  //   if (a.r < b.r) return -1;
+  //   if (a.r > b.r) return 1;
+  //   return 0;
+  // });
 }
 var getColorsFromTheImage = function (img) {
   var canvas = document.createElement('canvas');
@@ -114,14 +114,15 @@ var getColorsFromTheImage = function (img) {
   canvas.getContext('2d').drawImage(img, 0, 0, img.width, img.height);
   getColorsFromTheCanvas(canvas);
 }
+
 document.addEventListener('DOMContentLoaded', function () {
   var getColorsButton = document.getElementById('getColors');
 
   // https://developer.chrome.com/extensions/messaging
   getColorsButton.addEventListener('click', function () {
     chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-      chrome.tabs.sendMessage(tabs[0].id, { text: "getFavIcon" },
-        function (response) {
+      chrome.tabs.sendMessage(tabs[0].id, { type: "getFavIcon" },
+        (response) => {
           console.log(response.favUrl);
           createImgFaviconFromUrl(response.favUrl);
           // var scr = chrome.tabs.captureVisibleTab(chrome.extension.getBackgroundPage(), function(result){
@@ -137,28 +138,30 @@ document.addEventListener('DOMContentLoaded', function () {
             var colorsResultDiv = document.getElementById('colors-result');
             colors.forEach(clr => {
 
-              // var colorDiv = document.createElement('div');
-              // colorDiv.classList.add("data-color-color");
-              // colorDiv.style.backgroundColor = "rgba(" + clr.r + "," + clr.g + "," + clr.b + "," + clr.a + ")";
-              // colorsResultDiv.appendChild(colorDiv);
+              var colorDiv = document.createElement('div');
+              colorDiv.classList.add("data-color-color");
+              colorDiv.style.backgroundColor = "rgba(" + clr.r + "," + clr.g + "," + clr.b + "," + clr.a + ")";
+              colorsResultDiv.appendChild(colorDiv);
 
-              // var infoDiv = document.createElement('div');
-              // infoDiv.classList.add("data-color-info");
-              // infoDiv.innerText = (clr.percentage() * 100).toFixed(3) + "%";
-              // colorsResultDiv.appendChild(infoDiv);
+              var infoDiv = document.createElement('div');
+              infoDiv.classList.add("data-color-info");
+              infoDiv.innerText = (clr.percentage() * 100).toFixed(3) + "%";
+              colorsResultDiv.appendChild(infoDiv);
             });
 
-            document.getElementById("colors-total-perc").innerHTML =
-              (colors.reduce(function (a, b) { return a + b.percentage() }, 0) * 100).toFixed(3) + " %";
+            // Total Perc
+            // document.getElementById("colors-total-perc").innerHTML =
+            //   (colors.reduce(function (a, b) { return a + b.percentage() }, 0) * 100).toFixed(3) + " %";
 
 
             var hexes = getHexGradientArr(colors, 4);
 
             hexes.sort().forEach(hx => {
               var colorDiv = document.createElement('div');
-              colorDiv.classList.add("data-color-color");
+              colorDiv.classList.add("data-color-hex");
               colorDiv.style.backgroundColor = "#" + hx;
               colorsResultDiv.appendChild(colorDiv);
+
             });
 
             var backgroundGradient = document.getElementById("colors-gradient");

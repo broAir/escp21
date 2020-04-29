@@ -82,13 +82,18 @@ var getColorsForTheFav = function () {
 
 }
 
-// Get Favicon from the page. Listen for messages
-chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
-    // If the received message has the expected format...
-    if (request.text === 'getFavIcon') {
-        // Call the specified callback, passing
-        // the web-page's fav icon DOM content as argument
-        sendResponse({ favUrl: document.querySelectorAll('[rel~="icon"]')[0].href });
+//  Listen for messages
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+
+    switch (request.type) {
+        case 'getFavIcon': {
+            sendResponse({ favUrl: document.querySelectorAll('[rel~="icon"]')[0].href });
+            break;
+        }
+        case 'collectPageTags': {
+            sendResponse({ hostName: window.location.host });
+            break;
+        }
     }
 });
 
