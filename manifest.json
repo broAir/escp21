@@ -18,6 +18,9 @@
   ],
   "background": {
     "scripts": [
+      "/modules/jquery-3.5.0.min.js",
+      "/modules/html2canvas.min.js",
+      "/common/color-collector.js",
       "background.js"
     ],
     "persistent": false
@@ -41,6 +44,9 @@
     "default_icon": "popup/popup.png",
     "default_popup": "popup/popup.html",
     "default_title": "This is a tooltip"
+  },
+  "chrome_url_overrides": {
+    "newtab": "dashboard/dashboard.html"
   },
   "chrome_settings_overrides": {
     "homepage": "http://www.homepage.com",
