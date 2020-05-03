@@ -78,7 +78,7 @@ var sendToStorage = (key, obj) => {
 var addNewTimeCollectionEntry = (data) => {
     var hostNameKey = data.hostName;
 
-    var dataToSave = {
+    var currentSessionData = {
         day: data.startDate.toDateString(),
         time: data.startDate.toTimeString(),
         timeShort: data.startDate.toTimeString().substr(0, 5),
@@ -88,32 +88,65 @@ var addNewTimeCollectionEntry = (data) => {
         category: findCategoryByWebsiteInfo(data)
     }
 
-    // save by the hostnameKey
-    chrome.storage.local.get("TimeSessionsBySite", (storageResultObj) => {
-        var TimeSessionsBySite = storageResultObj && storageResultObj["TimeSessionsBySite"] || {};
-        var timeSessionByHostEntry = TimeSessionsBySite[hostNameKey] || {};
-        var dataArr = (timeSessionByHostEntry.arr) || [];
+    // // save to the mass storage
+    // chrome.storage.local.get("TimeSessionsBySite", (storageResultObj) => {
+    //     var TimeSessionsBySite = storageResultObj && storageResultObj["TimeSessionsBySite"] || {};
+    //     var timeSessionByHostEntry = TimeSessionsBySite[hostNameKey] || {};
+    //     var dataArr = (timeSessionByHostEntry.arr) || [];
 
-        dataArr.push(dataToSave);
+    //     dataArr.push(currentSessionData);
 
-        TimeSessionsBySite[hostNameKey] = timeSessionByHostEntry =
+    //     TimeSessionsBySite[hostNameKey] = timeSessionByHostEntry =
+    //     {
+    //         hostName: currentSessionData.hostName,
+    //         favIconUrl: data.favIconUrl,
+    //         grad: timeSessionByHostEntry.grad,
+    //         arr: dataArr
+    //     };
+
+    //     // If has gradient assigned
+    //     if (timeSessionByHostEntry.grad ?? false) {
+    //         sendToStorage("TimeSessionsBySite", TimeSessionsBySite);
+    //     } else {
+    //         getColorsFromFavUrl(data.favIconUrl).then((grad) => {
+    //             TimeSessionsBySite[hostNameKey].grad = grad;
+    //             sendToStorage("TimeSessionsBySite", TimeSessionsBySite);
+    //         });
+    //     }
+    // });
+
+    // save by the day key
+    var todayString = new Date().toDateString();
+    chrome.storage.local.get([todayString], (storageResultObj) => {
+        // check if there is a storage entry for today and filling metadata
+        var timeSessionsForToday = storageResultObj && storageResultObj[todayString] || {
+            date: todayString,
+            dayOfWeek : new Date().getDay(),
+            siteSessionData: {},
+        };
+        // check if there is a hostname key entry in the todays storage
+        var timeSessionByHostEntry = timeSessionsForToday.siteSessionData[hostNameKey] || {};
+        // check if there is any data in the host name entry
+        var sessionsByHostname = (timeSessionByHostEntry.sessions) || [];
+        sessionsByHostname.push(currentSessionData);
+
+        timeSessionsForToday.siteSessionData[hostNameKey] =
         {
-            hostName: dataToSave.hostName,
+            hostName: currentSessionData.hostName,
             favIconUrl: data.favIconUrl,
             grad: timeSessionByHostEntry.grad,
-            arr: dataArr
+            sessions: sessionsByHostname
         };
-        
         // If has gradient assigned
         if (timeSessionByHostEntry.grad ?? false) {
-            sendToStorage("TimeSessionsBySite", TimeSessionsBySite);
+            sendToStorage([todayString], timeSessionsForToday);
         } else {
             getColorsFromFavUrl(data.favIconUrl).then((grad) => {
-                TimeSessionsBySite[hostNameKey].grad = grad;
-                sendToStorage("TimeSessionsBySite", TimeSessionsBySite);
+                timeSessionsForToday.siteSessionData[hostNameKey].grad = grad;
+                sendToStorage([todayString], timeSessionsForToday);
             });
         }
-    })
+    });
 }
 
 var getStorageKeyForTab = (tab, key) => {

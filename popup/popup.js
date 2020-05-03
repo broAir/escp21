@@ -4,17 +4,18 @@ document.addEventListener('DOMContentLoaded', () => {
     var activeTab = tabs[0];
     var url = new URL(activeTab.url);
     var hostName = url.hostname;
+    var today = new Date().toDateString();
 
-    chrome.storage.local.get("TimeSessionsBySite", (storageResultObj) => {
-      var timeSessionsCollection = storageResultObj["TimeSessionsBySite"] || {};
-      var currentSite = timeSessionsCollection[hostName];
+    chrome.storage.local.get([today], (storageResultObj) => {
 
+      var siteSessionDataForToday = storageResultObj[today] && storageResultObj[today].siteSessionData || {};
+      var currentSite = siteSessionDataForToday[hostName];
       if (!currentSite) return;
 
       var ctx = document.getElementById('site-chart').getContext('2d');
 
-      var grad = ctx.createLinearGradient(0, 0, 600, 0);
-      grad.addColorStop(0, currentSite.grad[0] ?? "#000000");
+      var grad = ctx.createLinearGradient(0, 0, 0, 150);
+      grad.addColorStop(0.5, currentSite.grad[0] ?? "#000000");
       grad.addColorStop(1, currentSite.grad[1] ?? "#FFFFFF");
 
       var chartRenderData = {
@@ -45,9 +46,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }]
           }
         }
-      }
+      };
 
-      currentSite.arr.forEach((siteSessionEntry) => {
+      var dataForToday = currentSite.sessions;
+      dataForToday.forEach((siteSessionEntry) => {
         chartRenderData.data.labels.push(siteSessionEntry.timeShort);
         chartRenderData.data.datasets[0].data.push((siteSessionEntry.elapsedMs / 60000).toFixed(3));
       });

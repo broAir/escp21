@@ -1,17 +1,41 @@
+var renderCategoriesChart = (labels, chartDataSets) => {
+	var ctx = document.getElementById('categories-chart').getContext('2d');
+
+	var chartRenderData = {
+		type: 'pie',
+		data: {
+			labels: labels,
+			datasets: chartDataSets
+		},
+		options: {
+			scales: {
+				yAxes: [{
+					ticks: {
+						beginAtZero: true
+					}
+				}]
+			}
+		}
+	}
+
+	var pieChart = new Chart(ctx, chartRenderData);
+}
 $(document).ready(function () {
-	var data = chrome.storage.local.get("TimeSessionsBySite", (storageResultObj) => {
+	var today = new Date().toDateString();
+	chrome.storage.local.get([today], (storageResultObj) => {
 		var ctx = document.getElementById('basicChart').getContext('2d');
 
 		// var purple_orange_gradient = ctx.createLinearGradient(0, 0, 0, 600);
 		// purple_orange_gradient.addColorStop(0, 'orange');
 		// purple_orange_gradient.addColorStop(1, 'purple');
 
-		var chartRenderData = {
-			type: 'doughnut',
+		var chartRenderOptions = {
+			type: 'horizontalBar',
 			data: {
 				labels: [],
+				icons: [],
 				datasets: [{
-					label: 'Time min',
+					label: 'Time in min',
 					data: [],
 					backgroundColor: [],
 					backgroundImage: [],
@@ -26,33 +50,62 @@ $(document).ready(function () {
 							beginAtZero: true
 						}
 					}]
+				},
+				legend: {
+					display: true
+				},
+				// https://www.chartjs.org/docs/latest/configuration/legend.html#legend-label-configuration
+				// https://stackoverflow.com/questions/37005297/custom-legend-with-chartjs-v2-0
+				legendCallback: function (chart) {
+					var text = [];
+					text.push('<ul class="' + chart.id + '-legend">');
+					for (var i = 0; i < chart.data.icons.length; i++) {
+						text.push('<img width="32" height="32" src="' + chart.data.icons[i] + '"/>');
+					}
+					text.push('</ul>');
+					return text.join('');
 				}
 			}
 		}
-		var timeSessionsCollection = storageResultObj["TimeSessionsBySite"] || {};
-		var hostEntryStorageKeys = Object.keys(timeSessionsCollection);
 
-		var today = new Date().toDateString();
+		var siteSessionDataForToday = storageResultObj[today] && storageResultObj[today].siteSessionData || {};
+		var hostEntryStorageKeys = Object.keys(siteSessionDataForToday);
+
+		hostEntryStorageKeys = hostEntryStorageKeys
+			// Sort by elapsed
+			.sort((a, b) => {
+				var elapsedA = siteSessionDataForToday[a].sessions.filter(x => x.day == today).reduce((s1, s2) => s1 + s2.elapsedMs, 0);
+				var elapsedB = siteSessionDataForToday[b].sessions.filter(x => x.day == today).reduce((s1, s2) => s1 + s2.elapsedMs, 0);
+				if (elapsedA > elapsedB) return -1;
+				if (elapsedA < elapsedB) return 1;
+				return 0;
+			})
+			// Take only top 5
+			.slice(0, 10);
 
 		hostEntryStorageKeys.forEach((hostNameKey) => {
-			var siteEntry = timeSessionsCollection[hostNameKey];
+			var siteEntry = siteSessionDataForToday[hostNameKey];
 			// Add the host name label
-			chartRenderData.data.labels.push(siteEntry.hostName);
+			chartRenderOptions.data.labels.push(siteEntry.hostName);
+			chartRenderOptions.data.icons.push(siteEntry.favIconUrl);
+
 			// Filter by today only
-			var dataSetForToday = siteEntry.arr.filter(x => x.day == today);
+			var todaySessions = siteEntry.sessions;
 			// display minutes in the chart
-			var dataSetMinutes = dataSetForToday.reduce((s1, s2) => s1 + s2.elapsedMs, 0) / 60000
-			
-			chartRenderData.data.datasets[0].data.push(dataSetMinutes);
+			var dataSetMinutes = todaySessions.reduce((s1, s2) => s1 + s2.elapsedMs, 0) / 60000
+			chartRenderOptions.data.datasets[0].data.push(dataSetMinutes);
+
 			// Add gradient to the backround
-			var grad = ctx.createLinearGradient(0, 0, 0, 600);
-			grad.addColorStop(0, siteEntry.grad[0] ?? "#FFFFFF");
+			var grad = ctx.createLinearGradient(0, 0, 300, 0);
+			grad.addColorStop(0.5, siteEntry.grad[0] ?? "#FFFFFF");
 			grad.addColorStop(1, siteEntry.grad[1] ?? "#000000");
-			chartRenderData.data.datasets[0].backgroundColor.push(grad);
+			chartRenderOptions.data.datasets[0].backgroundColor.push(grad);
 
 		});
 
-		var myChart = new Chart(ctx, chartRenderData);
+		var myChart = new Chart(ctx, chartRenderOptions);
+		window.mainChart = myChart;
+		window.chartRenderOptions = chartRenderOptions;
 	})
 
 });

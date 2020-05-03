@@ -6,11 +6,24 @@
 </head>
 
 <body>
+  <nav class="navbar navbar-light bg-light">
+    <a class="navbar-brand" href="#">
+      <img src="/icons/computer.svg" width="30" height="30" class="d-inline-block align-top"
+        alt="Dashboard icon">
+      Your Personal Dashboard!
+    </a>
+  </nav>
   <div class="container">
     <div class="row">
-      <div class="col" style="height: 50%;">
+      <div class="col-6" style="height: 50%;">
         <canvas id="basicChart"></canvas></div>
+        <div class="col-6" style="height: 50%;">
+          <canvas id="categories-chart"></canvas></div>
     </div>
+  </div>
+  <div class="footer">
+    <small>Icons made by <a href="https://creativemarket.com/eucalyp" title="Eucalyp">Eucalyp</a> from <a
+        href="https://www.flaticon.com/" title="Flaticon"> www.flaticon.com</a></small>
   </div>
   <script src="/modules/jquery-3.5.0.min.js"></script>
   <script src="/modules/html2canvas.min.js"></script>
