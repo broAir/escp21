@@ -121,7 +121,7 @@ var addNewTimeCollectionEntry = (data) => {
         // check if there is a storage entry for today and filling metadata
         var timeSessionsForToday = storageResultObj && storageResultObj[todayString] || {
             date: todayString,
-            dayOfWeek : new Date().getDay(),
+            dayOfWeek: new Date().getDay(),
             siteSessionData: {},
         };
         // check if there is a hostname key entry in the todays storage
@@ -180,30 +180,57 @@ chrome.webNavigation.onCompleted.addListener((details) => {
 
 });
 
+var collectFavIconUrlFromTheTab = (tab) => {
+    return tab.favIconUrl || false
+        ? new Promise((resolve, reject) => resolve(tab.favIconUrl))
+        : new Promise((resolve, reject) => {
+            chrome.tabs.sendMessage(tab.id, { type: "collectPageTags" }, null, (response) => {
+                resolve(response.favIconUrl);
+            });
+        })
+}
+
+// This event is fired when we havigate to a different page within one tab 
+// OR go back 
+// OR hit ENTER in the address bar
+// So we need to save the session data ONLY if the target navigation URL is different 
 chrome.webNavigation.onBeforeNavigate.addListener((evt) => {
     // https://developer.chrome.com/extensions/tabs#method-query
     chrome.tabs.query({ active: true, lastFocusedWindow: true }, (tabs) => {
         var activeTab = tabs[0];
-        chrome.tabs.sendMessage(activeTab.id, { type: "collectPageTags" }, null, (response) => {
-            var start_key = getStorageKeyForTab(activeTab, "start");
-            var elapsed_key = getStorageKeyForTab(activeTab, "elapsed")
-            var startDate = chrome.storage.sync[start_key] ?? new Date();
 
-            var elapsedMs = new Date() - startDate;
-            addNewTimeCollectionEntry({
-                startDate: startDate,
-                elapsedMs: elapsedMs,
-                hostName: response.hostName,
-                favIconUrl: response.favIconUrl
-            });
+        if (!activeTab)
+            return console.error("active tab was null");
 
-            // empty local storage for this tab
-            chrome.storage.sync[start_key] = chrome.storage.sync[elapsed_key] = null;
-        });
+        var favIconUrl = activeTab.favIconUrl;
+        var pendingUrl = activeTab.pendingUrl;
+        var lastUrl = activeTab.url;
+        var pendingUrlHostName = new URL(pendingUrl).host;
+        var lastUrlHostName = new URL(lastUrl).host;
+
+        // if navigated to a different host name
+        if (lastUrlHostName != pendingUrlHostName) {
+            collectFavIconUrlFromTheTab(activeTab)
+                .then((favIconUrl) => {
+                    var start_key = getStorageKeyForTab(activeTab, "start");
+                    var startDate = chrome.storage.sync[start_key] ?? new Date();
+                    var elapsedMs = new Date() - startDate;
+
+                    addNewTimeCollectionEntry({
+                        startDate: startDate,
+                        elapsedMs: elapsedMs,
+                        hostName: lastUrlHostName,
+                        favIconUrl: favIconUrl
+                    });
+                    // empty local storage for this tab
+                    chrome.storage.sync.remove([start_key]);
+                })
+        }
     });
+
 });
 
-
+// Start the clock when tab has became active
 chrome.tabs.onActivated.addListener((activeInfo) => {
     chrome.tabs.get(activeInfo.tabId, (tab) => {
         var start_key = getStorageKeyForTab(tab, "start");
