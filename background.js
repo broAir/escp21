@@ -76,7 +76,7 @@ var addNewTimeCollectionEntry = (data) => {
                     sendToStorage([todayString], timeSessionsForToday);
                 })
                 // if impossible to get favicon - save anyway
-                .error(() => sendToStorage([todayString], timeSessionsForToday));
+                .catch(() => sendToStorage([todayString], timeSessionsForToday));
         }
     });
 }
@@ -158,7 +158,7 @@ chrome.tabs.onActivated.addListener((activeInfo) => {
         // preserve this tab data for future
         lastActiveTabData.tabId = tab.id;
         lastActiveTabData.windowId = tab.windowId;
-        lastActiveTabData.hostName = new URL(tab.url).host;
+        lastActiveTabData.hostName = tab.url ?? new URL(tab.url).host ?? null;
 
         var start_key = getStorageKeyForTab(tab.tabId, tab.windowId, "start");
         chrome.storage.sync[start_key] = new Date();
