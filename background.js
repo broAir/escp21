@@ -4,6 +4,12 @@ var lastActiveTabData = {
     hostName: ""
 }
 
+this.settings = {
+    // threshold in seconds to record the elapsed time for the session (def: 10 sec)
+    elapsedThreshold: 10 * 1000,
+    // threshold in ms which will tell to append value to the old session (def: 5 min)
+    appendToOldSessionThreshold: 5 * 60 * 1000
+}
 var getStorageKeyForTab = (tabId, windowId, key) => {
     return key + "_" + windowId + "_" + tabId;
 };
@@ -32,8 +38,8 @@ var sendToStorage = (key, obj) => {
     });
 }
 
-var addNewTimeCollectionEntry = (data) => {
-    var hostNameKey = data.hostName;
+var addNewTimeCollectionEntry = (data, appendToOldSession) => {
+    appendToOldSession = appendToOldSession || false;
 
     var currentSessionData = {
         day: data.startDate.toDateString(),
@@ -48,6 +54,7 @@ var addNewTimeCollectionEntry = (data) => {
     // save by the day key
     var todayString = new Date().toDateString();
     chrome.storage.local.get([todayString], (storageResultObj) => {
+        var hostName = data.hostName;
         // check if there is a storage entry for today and filling metadata
         var timeSessionsForToday = storageResultObj && storageResultObj[todayString] || {
             date: todayString,
@@ -55,24 +62,40 @@ var addNewTimeCollectionEntry = (data) => {
             siteSessionData: {},
         };
         // check if there is a hostname key entry in the todays storage
-        var timeSessionByHostEntry = timeSessionsForToday.siteSessionData[hostNameKey] || {};
+        var timeSessionByHostEntry = timeSessionsForToday.siteSessionData[hostName] || {};
         // check if there is any data in the host name entry
         var sessionsByHostname = (timeSessionByHostEntry.sessions) || [];
-        sessionsByHostname.push(currentSessionData);
 
+        // shall we append data to the old session?
+        if (!appendToOldSession || sessionsByHostname.length < 1) {
+            sessionsByHostname.push(currentSessionData);
+        } else {
+            // get last session
+            var prevSession = sessionsByHostname[sessionsByHostname.length - 1];
+            var prevSessionDate = Date.parse(prevSession.date);
+            // compare previous session date and current session date
+            // prevSess.Start+Elapsed = endOfPrevSession
+            if (Math.abs(prevSessionDate + prevSession.elapsedMs - data.startDate) <= settings.appendToOldSessionThreshold) {
+                // if difference is less then threshold - add elapsedMs to the prevSession
+                prevSession.elapsedMs += data.elapsedMs;
+            } else {
+                // if difference is too big - push new session
+                sessionsByHostname.push(currentSessionData);
+            }
+        }
         timeSessionByHostEntry.hostName = currentSessionData.hostName || timeSessionByHostEntry.hostName;
         timeSessionByHostEntry.favIconUrl = data.favIconUrl || timeSessionByHostEntry.favIconUrl;
         timeSessionByHostEntry.grad = timeSessionByHostEntry.grad;
         timeSessionByHostEntry.sessions = sessionsByHostname;
 
-        timeSessionsForToday.siteSessionData[hostNameKey] = timeSessionByHostEntry;
+        timeSessionsForToday.siteSessionData[hostName] = timeSessionByHostEntry;
         // If has gradient assigned
         if (timeSessionByHostEntry.grad ?? false) {
             sendToStorage([todayString], timeSessionsForToday);
         } else {
             getColorsFromFavUrl(data.favIconUrl)
                 .then((grad) => {
-                    timeSessionsForToday.siteSessionData[hostNameKey].grad = grad;
+                    timeSessionsForToday.siteSessionData[hostName].grad = grad;
                     sendToStorage([todayString], timeSessionsForToday);
                 })
                 // if impossible to get favicon - save anyway
@@ -83,15 +106,19 @@ var addNewTimeCollectionEntry = (data) => {
 
 var saveSessionData = (tabId, windowId, hostname, favIconUrl) => {
     var start_key = getStorageKeyForTab(tabId, windowId, "start");
-    var startDate = chrome.storage.sync[start_key] ?? new Date();
-    var elapsedMs = new Date() - startDate;
+    var startDateTime = chrome.storage.sync[start_key] ?? new Date();
+    var elapsedDateTime = new Date();
+    var elapsedMs = elapsedDateTime - startDateTime;
 
-    addNewTimeCollectionEntry({
-        startDate: startDate,
-        elapsedMs: elapsedMs,
-        hostName: hostname,
-        favIconUrl: favIconUrl
-    });
+    // Do not save if less then threshold
+    if (elapsedMs >= settings.elapsedThreshold) {
+        addNewTimeCollectionEntry({
+            startDate: startDateTime,
+            elapsedMs: elapsedMs,
+            hostName: hostname,
+            favIconUrl: favIconUrl
+        }, true);
+    }
     // empty local storage for this tab
     chrome.storage.sync.remove([start_key]);
 }
