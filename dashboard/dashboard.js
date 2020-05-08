@@ -25,7 +25,7 @@ var renderWeeklyChart = () => {
 	var ctx = document.getElementById('weekly-chart').getContext('2d');
 
 	var chartRenderOptions = {
-		type: 'bar',
+		type: 'line',
 		data: {
 			labels: [],
 			icons: [],
@@ -42,10 +42,24 @@ var renderWeeklyChart = () => {
 		options: {
 			scales: {
 				yAxes: [{
+					scaleLabel: {
+						labelString: 'Hrs',
+						display: true,
+						padding: 1
+					},
+					offset: true,
 					ticks: {
+						stepSize: 2,
 						beginAtZero: true
 					}
-				}], xAxes: [{
+				}],
+				xAxes: [{
+					scaleLabel: {
+						labelString: 'Day of the week',
+						display: true,
+						padding: 1
+					},
+					offset: true,
 					ticks: {
 						beginAtZero: true
 					},
@@ -142,20 +156,32 @@ var renderChartForToday = () => {
 			scales: {
 				yAxes: [{
 					ticks: {
+						z: 1,
+						fontColor: 'white',
+						backdropColor: 'black', //doesn't work
+						mirror: true,
+						fontSize: 10, //make the font slightly larger
+						padding: -10, //move the text slightly away from the bar edge
 						beginAtZero: true
 					},
 					gridLines: {
-						display: false
+						display: false,
+						drawBorder: false
 					}
 				}],
 				xAxes: [{
+					scaleLabel: {
+						labelString: 'Min',
+						display: true,
+						padding: 1
+					},
 					ticks: {
 						beginAtZero: true
 					}
 				}]
 			},
 			legend: {
-				display: true
+				display: false
 			},
 			lineHeightAnnotation: {
 				always: false

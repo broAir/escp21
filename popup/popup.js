@@ -23,6 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
         data: {
           labels: [],
           datasets: [{
+            label: currentSite.hostName,
             data: [],
             backgroundColor: grad,
             backgroundImage: [],
@@ -32,17 +33,26 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         options: {
           legend: {
-            display: false
+            display: true
           },
           scales: {
             yAxes: [{
+              scaleLabel: {
+                labelString: 'Min',
+                display: true,
+                padding: 2
+              },
               stacked: true,
               ticks: {
                 beginAtZero: true
               }
             }],
             xAxes: [{
-              display: true
+              scaleLabel: {
+                labelString: 'Time of the day',
+                display: true,
+                padding: 1
+              }
             }]
           }
         }
