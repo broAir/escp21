@@ -92,7 +92,7 @@ var renderWeeklyChart = () => {
 			// map string keys to date time
 			.map(x => new Date(x))
 			// order by desc
-			.sort((a, b) => b - a)
+			.sort((a, b) => a - b)
 			// Take 7
 			.slice(0, 7);
 
@@ -147,10 +147,18 @@ var renderChartForToday = () => {
 					gridLines: {
 						display: false
 					}
+				}],
+				xAxes: [{
+					ticks: {
+						beginAtZero: true
+					}
 				}]
 			},
 			legend: {
 				display: true
+			},
+			lineHeightAnnotation: {
+				always: false
 			},
 			// https://www.chartjs.org/docs/latest/configuration/legend.html#legend-label-configuration
 			// https://stackoverflow.com/questions/37005297/custom-legend-with-chartjs-v2-0
