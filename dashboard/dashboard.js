@@ -103,6 +103,8 @@ var renderWeeklyChart = () => {
 	chrome.storage.local.get(null, (storageResultObj) => {
 		// order keys by date
 		var dateEntriesForLastWeek = Object.keys(storageResultObj)
+			// only time-entry keys, no system keys (starts with _)
+			.filter(x => x.indexOf("_") < 0)
 			// map string keys to date time
 			.map(x => new Date(x))
 			// order by desc
@@ -232,8 +234,8 @@ var renderChartForToday = () => {
 
 			// Add gradient to the backround
 			var grad = ctx.createLinearGradient(0, 0, 300, 0);
-			grad.addColorStop(0.5, siteEntry.grad[0] ?? "#FFFFFF");
-			grad.addColorStop(1, siteEntry.grad[1] ?? "#000000");
+			grad.addColorStop(0.5, siteEntry.grad[0] ?? "#6495ed");
+			grad.addColorStop(1, siteEntry.grad[1] ?? "#6495ed");
 			chartRenderOptions.data.datasets[0].backgroundColor.push(grad);
 
 		});

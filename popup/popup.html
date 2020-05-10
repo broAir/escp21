@@ -6,6 +6,7 @@
   <script src="/modules/jquery-3.5.0.min.js"></script>
   <script src="/modules/html2canvas.min.js"></script>
   <script src="/modules/chart.min.js"></script>
+  <script src="/common/chartjs-plugins.js"></script>
   <script src="/popup/popup.js"></script>
 </head>
 
@@ -15,9 +16,37 @@
   <div class="chart-container">
     <canvas id="site-chart"></canvas>
   </div>
-  <button>Set limit</button>
+
+  <p>You can set a time limit <b>for session</b>. For example, if you scroll instagram continuously for 15 mins the
+    alert will be displayed.
+    <br />You can also set the daily limit in the dashboard page</p>
+  <div id='limit-set-message-container' style="display: none;" class="limit-set-message-container">
+  </div>
+  <div>
+    <label>Limit in min</label>
+    <div style="width: 100%;">
+      <input type="number" id="limit-val" placeholder="15" value="15" />
+    </div>
+  </div>
+  <div>
+    <label>Alert text (optional)</label>
+    <input type="text" id="limit-text" style="width:100%"
+      value="Hey John! You have been browsing here for too long! Take a break :)" />
+  </div><br />
+  <button id="set-limit-btn">Set limit</button>
+  <button id="remove-limit-btn" style="display: none;">Remove limit</button>
+
 </body>
 <style>
+  div{
+    margin-top: 5px;
+  }
+  .limit-set-message-container {
+    border-radius: 6px;
+    background-color: rgba(76, 175, 80, 0.35);
+    padding: 5px;
+  }
+
   .chart-container {
     width: 500px;
     height: 300px;

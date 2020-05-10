@@ -1,0 +1,15 @@
+// chrome.storage.local.get("Fri May 08 2020", (res)=> {
+//   delete res["Fri May 08 2020"].siteSessionData["kantarware.visualstudio.com"];
+//   chrome.storage.local.set({"Fri May 08 2020": res["Fri May 08 2020"]});
+  
+//   })
+
+// var ttt = {};
+// var ress = {};
+// chrome.storage.local.get(null, (res)=>
+//                          {ress= res; console.log(ttt = Object.keys(res));console.log(Object.values(res))}
+// )
+
+
+
+// !document.hasFocus()

@@ -1,3 +1,76 @@
+var sessionLimitStorageKey = "_SessionLimits";
+
+var renderChartSessionChart = (currentSite, sessionLimitForCurrentSite) => {
+  var ctx = document.getElementById('site-chart').getContext('2d');
+
+  var grad = ctx.createLinearGradient(0, 0, 0, 150);
+  grad.addColorStop(0.5, currentSite.grad[0] ?? "#6495ed");
+  grad.addColorStop(1, currentSite.grad[1] ?? "#6495ed");
+
+  var chartRenderData = {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: [{
+        label: currentSite.hostName,
+        data: [],
+        backgroundColor: grad,
+        borderColor: grad,
+        borderWidth: 1
+      }]
+    },
+    options: {
+      legend: {
+        display: true
+      },
+      scales: {
+        yAxes: [{
+          scaleLabel: {
+            labelString: 'Min',
+            display: true,
+            padding: 2
+          },
+          ticks: {
+            beginAtZero: true
+          }
+        }],
+        xAxes: [{
+          scaleLabel: {
+            labelString: 'Time of the day',
+            display: true,
+            padding: 1
+          }
+        }]
+      }
+    }
+  };
+
+  var dataForToday = currentSite.sessions;
+  dataForToday.forEach((siteSessionEntry) => {
+    chartRenderData.data.labels.push(siteSessionEntry.timeShort);
+    chartRenderData.data.datasets[0].data.push((siteSessionEntry.elapsedMs / 60000).toFixed(3));
+  });
+
+  if (sessionLimitForCurrentSite > 0) {
+    chartRenderData.data.datasets.push({
+      label: 'session limit',
+      data: new Array(dataForToday.length),
+      backgroundColor: 'rgba(76, 175, 80, 0.1)',
+      borderColor: 'rgba(76, 175, 80, 0.5)',
+      borderWidth: 1.5,
+      lineTension: 0.01,
+      type: 'line',
+      fill: '-1',
+      spanGaps: true,
+      order: 0
+    });
+    chartRenderData.data.datasets[1].data[0] = sessionLimitForCurrentSite;
+    chartRenderData.data.datasets[1].data[dataForToday.length - 1] = sessionLimitForCurrentSite;
+  }
+
+  var myChart = new Chart(ctx, chartRenderData);
+  window.myChart = myChart;
+}
 
 document.addEventListener('DOMContentLoaded', () => {
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
@@ -6,69 +79,47 @@ document.addEventListener('DOMContentLoaded', () => {
     var hostName = url.hostname;
     var today = new Date().toDateString();
 
-    chrome.storage.local.get([today], (storageResultObj) => {
+    chrome.storage.local.get([today, sessionLimitStorageKey], (storageResultObj) => {
 
-      var siteSessionDataForToday = storageResultObj[today] && storageResultObj[today].siteSessionData || {};
+      console.log(storageResultObj);
+      var siteSessionDataForToday = storageResultObj[today]
+        && storageResultObj[today].siteSessionData || {};
       var currentSite = siteSessionDataForToday[hostName];
       if (!currentSite) return;
 
-      var ctx = document.getElementById('site-chart').getContext('2d');
+      var limits = storageResultObj[sessionLimitStorageKey] || {};
+      var sessionLimitForCurrentSite = (limits[hostName] && limits[hostName].limitMin) || 0;
 
-      var grad = ctx.createLinearGradient(0, 0, 0, 150);
-      grad.addColorStop(0.5, currentSite.grad[0] ?? "#000000");
-      grad.addColorStop(1, currentSite.grad[1] ?? "#FFFFFF");
-
-      var chartRenderData = {
-        type: 'line',
-        data: {
-          labels: [],
-          datasets: [{
-            label: currentSite.hostName,
-            data: [],
-            backgroundColor: grad,
-            backgroundImage: [],
-            borderColor: [],
-            borderWidth: 1
-          }]
-        },
-        options: {
-          legend: {
-            display: true
-          },
-          scales: {
-            yAxes: [{
-              scaleLabel: {
-                labelString: 'Min',
-                display: true,
-                padding: 2
-              },
-              stacked: true,
-              ticks: {
-                beginAtZero: true
-              }
-            }],
-            xAxes: [{
-              scaleLabel: {
-                labelString: 'Time of the day',
-                display: true,
-                padding: 1
-              }
-            }]
-          }
-        }
-      };
-
-      var dataForToday = currentSite.sessions;
-      dataForToday.forEach((siteSessionEntry) => {
-        chartRenderData.data.labels.push(siteSessionEntry.timeShort);
-        chartRenderData.data.datasets[0].data.push((siteSessionEntry.elapsedMs / 60000).toFixed(3));
-      });
-
-      var myChart = new Chart(ctx, chartRenderData);
-      window.myChart = myChart;
-
+      renderChartSessionChart(currentSite, sessionLimitForCurrentSite);
 
       $("#site-name").text(hostName);
+
+      if (sessionLimitForCurrentSite > 0) {
+        $("#remove-limit-btn").show();
+        $("#remove-limit-btn").click((e) => {
+          delete limits[hostName];
+          chrome.storage.local.set({ [sessionLimitStorageKey]: limits });
+
+          $('#limit-set-message-container').html("Removed limit from the <b>" + hostName + "</b>");
+          $('#limit-set-message-container').show();
+        });
+      }
+
+      $("#set-limit-btn").click((e) => {
+        var limitMin = +$("#limit-val").val();
+        if (limitMin > 0) {
+
+          limits[hostName] = {
+            limitMin: limitMin,
+            limitMs: limitMin * 60 * 1000,
+            limitText: $("#limit-text").val()
+          };
+
+          chrome.storage.local.set({ [sessionLimitStorageKey]: limits });
+          $('#limit-set-message-container').html("You have set the limit for <b>" + hostName + "</b> to <i>" + limitMin + " minutes</i>. Please refresh the page!"); $('#limit-set-text').text("You have set the limit for " + hostName + " to " + limitMin + " minutes. Please refresh the page!");
+          $('#limit-set-message-container').show();
+        }
+      });
     })
   })
 });
