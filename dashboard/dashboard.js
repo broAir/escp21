@@ -218,7 +218,7 @@ var renderDayChart = (day) => {
 			// https://stackoverflow.com/questions/44649247/how-to-create-custom-legend-in-chartjs
 			legendCallback: function (chart) {
 				var text = [];
-				text.push('<ul class="' + chart.id + '-legend">');
+				text.push('<ul class="' + chart.id + '-legend" style="padding: 0px">');
 				for (var i = 0; i < chart.data.icons.length; i++) {
 					text.push('<img class="legend-icon-img" width="12" height="12" src="' + chart.data.icons[i] + '"/>');
 				}
