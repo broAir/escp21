@@ -1,3 +1,11 @@
+var fillSelectList = (id, data, val) => {
+	var select = $(id);
+	select.html(data.reduce((s, x) => s + "<option>" + x + "</option>", ""));
+	if (val) {
+		select.val(val);
+	}
+}
+
 var renderCategoriesChart = (labels, chartDataSets) => {
 	var ctx = document.getElementById('categories-chart').getContext('2d');
 
@@ -40,6 +48,18 @@ var renderWeeklyChart = () => {
 			}]
 		},
 		options: {
+			tooltips: {
+				callbacks: {
+					label: function (tooltipItem, data) {
+						// def label
+						// var label = data.datasets[tooltipItem.datasetIndex].label || '';
+						var val = tooltipItem.yLabel;
+						var hrs = Math.floor(val / 1);
+						var min = ((val % 1) * 60).toFixed(0);
+						return (hrs > 0 ? (hrs + " hr ") : "") + min + " min"
+					}
+				}
+			},
 			scales: {
 				yAxes: [{
 					scaleLabel: {
@@ -84,7 +104,7 @@ var renderWeeklyChart = () => {
 				/// sets shadow for ALL lines on the canvas
 				shadow: {
 					// color of the shadow
-					color: 'rgba(0,0,0,0.35)',
+					color: 'rgba(0, 0, 0, 0.35)',
 					// blur of the shadow
 					blur: 10,
 					/// shadow offset
@@ -102,15 +122,7 @@ var renderWeeklyChart = () => {
 	// get all storage entries
 	chrome.storage.local.get(null, (storageResultObj) => {
 		// order keys by date
-		var dateEntriesForLastWeek = Object.keys(storageResultObj)
-			// only time-entry keys, no system keys (starts with _)
-			.filter(x => x.indexOf("_") < 0)
-			// map string keys to date time
-			.map(x => new Date(x))
-			// order by desc
-			.sort((a, b) => a - b)
-			// Take 7
-			.slice(0, 7);
+		var dateEntriesForLastWeek = extractDatesFromStorageObjAndSort(storageResultObj, 7);
 
 		var elapsedHrsForLastWeek = dateEntriesForLastWeek
 			.map(x => {
@@ -137,7 +149,7 @@ var renderWeeklyChart = () => {
 	});
 }
 
-var renderChartForToday = () => {
+var renderDayChart = (day) => {
 	var ctx = document.getElementById('basicChart').getContext('2d');
 
 	var chartRenderOptions = {
@@ -146,6 +158,9 @@ var renderChartForToday = () => {
 			labels: [],
 			icons: [],
 			datasets: [{
+				barPercentage: 1,
+				categoryPercentage: 0.9,
+				barThickness: 16,
 				label: 'Time in min',
 				data: [],
 				backgroundColor: [],
@@ -155,12 +170,17 @@ var renderChartForToday = () => {
 			}]
 		},
 		options: {
+			tooltips: {
+				callbacks: {
+					// Display x Hr y Min in the tooltip
+					label: (tooltipItem, data) => convertMinToMinHrLabel(tooltipItem.xLabel)
+				}
+			},
 			scales: {
 				yAxes: [{
 					ticks: {
 						z: 1,
-						fontColor: 'white',
-						backdropColor: 'black', //doesn't work
+						fontColor: 'black',
 						mirror: true,
 						fontSize: 10, //make the font slightly larger
 						padding: -10, //move the text slightly away from the bar edge
@@ -174,11 +194,17 @@ var renderChartForToday = () => {
 				xAxes: [{
 					scaleLabel: {
 						labelString: 'Min',
-						display: true,
+						display: false,
 						padding: 1
 					},
 					ticks: {
-						beginAtZero: true
+						beginAtZero: true,
+						callback: (value, index, values) =>
+							// for ticks: if any value is more than 100 
+							// convert tick labels to hr format
+							values.some(x => x > 100) ?
+								convertMinToMinHrLabel(value, true) :
+								value + "m"
 					}
 				}]
 			},
@@ -189,12 +215,12 @@ var renderChartForToday = () => {
 				always: false
 			},
 			// https://www.chartjs.org/docs/latest/configuration/legend.html#legend-label-configuration
-			// https://stackoverflow.com/questions/37005297/custom-legend-with-chartjs-v2-0
+			// https://stackoverflow.com/questions/44649247/how-to-create-custom-legend-in-chartjs
 			legendCallback: function (chart) {
 				var text = [];
 				text.push('<ul class="' + chart.id + '-legend">');
 				for (var i = 0; i < chart.data.icons.length; i++) {
-					text.push('<img width="32" height="32" src="' + chart.data.icons[i] + '"/>');
+					text.push('<img class="legend-icon-img" width="12" height="12" src="' + chart.data.icons[i] + '"/>');
 				}
 				text.push('</ul>');
 				return text.join('');
@@ -202,10 +228,10 @@ var renderChartForToday = () => {
 		}
 	}
 
-	var today = new Date().toDateString();
+	var day = day || new Date().toDateString();
 
-	chrome.storage.local.get([today], (storageResultObj) => {
-		var siteSessionDataForToday = storageResultObj[today] && storageResultObj[today].siteSessionData || {};
+	chrome.storage.local.get(null, (storageResultObj) => {
+		var siteSessionDataForToday = storageResultObj[day] && storageResultObj[day].siteSessionData || {};
 		var hostEntryStorageKeys = Object.keys(siteSessionDataForToday);
 
 		hostEntryStorageKeys = hostEntryStorageKeys
@@ -224,7 +250,7 @@ var renderChartForToday = () => {
 			var siteEntry = siteSessionDataForToday[hostNameKey];
 			// Add the host name label
 			chartRenderOptions.data.labels.push(siteEntry.hostName);
-			chartRenderOptions.data.icons.push(siteEntry.favIconUrl);
+			chartRenderOptions.data.icons.push(siteEntry.favIconUrl ?? "");
 
 			// Filter by today only
 			var todaySessions = siteEntry.sessions;
@@ -234,22 +260,50 @@ var renderChartForToday = () => {
 
 			// Add gradient to the backround
 			var grad = ctx.createLinearGradient(0, 0, 300, 0);
-			grad.addColorStop(0.5, siteEntry.grad[0] ?? "#6495ed");
-			grad.addColorStop(1, siteEntry.grad[1] ?? "#6495ed");
+			grad.addColorStop(0, "rgba(240, 248, 255, 50)");
+			//grad.addColorStop(0.3, siteEntry.grad[0] ?? "#6495ed");
+			grad.addColorStop(0.5, siteEntry.grad[1] ?? "#6495ed");
 			chartRenderOptions.data.datasets[0].backgroundColor.push(grad);
 
 		});
 
-		var myChart = new Chart(ctx, chartRenderOptions);
-		window.chartForToday = myChart;
-		window.chartForTodayRenderOptions = chartRenderOptions;
+		if (window.dailyChart) {
+			window.dailyChart.data = chartRenderOptions.data;
+			window.dailyChart.update();
+		} else {
+			window.dailyChart = new Chart(ctx, chartRenderOptions);
+		}
+
+		window.dailyChartRenderOptions = chartRenderOptions;
+		$("#chart-fav-labels").html(window.dailyChart.generateLegend());
 	});
 }
+
+var renderChartForToday = () => {
+	var today = new Date().toDateString();
+	renderDayChart(today);
+
+	chrome.storage.local.get(null, (storageResultObj) => {
+		// Fill the select list on top of the page
+		fillSelectList("#select-day",
+			extractDatesFromStorageObjAndSort(storageResultObj, 14).map(x => x.toDateString()),
+			today);
+	});
+};
+
+var bindEvents = () => {
+	$("#select-day").change(e => {
+		var day = e.currentTarget.value;
+		renderDayChart(day);
+	});
+}
+
 $(document).ready(function () {
 	renderChartForToday();
 	renderWeeklyChart();
-
+	bindEvents();
 });
+
 // if(!_app._on){
 
 // 		// Get the current Tab

@@ -3,28 +3,37 @@
 <head>
   <title>Dashboard</title>
   <link rel="stylesheet" type="text/css" href="./css/bootstrap.min.css" />
+  <link rel="stylesheet" type="text/css" href="/style.css" />
 </head>
 
 <body>
   <nav class="navbar navbar-light bg-light">
     <a class="navbar-brand" href="#">
-      <img src="/icons/computer.svg" width="30" height="30" class="d-inline-block align-top"
-        alt="Dashboard icon">
+      <img src="/icons/computer.svg" width="30" height="30" class="d-inline-block align-top" alt="Dashboard icon">
       Your Personal Dashboard!
     </a>
   </nav>
   <div class="container">
     <div class="row">
       <div class="col-6" style="height: 50%;">
-        <canvas id="basicChart"></canvas></div>
-        <div class="col-6" style="height: 50%;">
-          <canvas id="categories-chart"></canvas></div>
+        <div class="form-group">
+          <small for="select-day">Select day</small>
+          <select class="form-control-sm" id="select-day"></select>
+        </div>
+        <div class="d-flex flex-row">
+          <div id="chart-fav-labels" class="flex-item chart-fav-labels">
+          </div>
+          <canvas id="basicChart"></canvas>
+        </div>
+      </div>
+      <div class="col-6" style="height: 50%;">
+        <canvas id="categories-chart"></canvas></div>
     </div>
     <div class="row">
-      <div class="col-6" style="height: 50%;">
+      <div class="col-6" style="height: 50%; padding: 0px;">
         <canvas id="weekly-chart"></canvas></div>
-        <div class="col-6" style="height: 50%;">
-          <canvas id="other-chart"></canvas></div>
+      <div class="col-6" style="height: 50%;">
+        <canvas id="other-chart"></canvas></div>
     </div>
   </div>
   <div class="footer">
@@ -36,6 +45,7 @@
   <script src="/modules/chart.min.js"></script>
   <script src="/modules/lineHeightAnnotationPlugin.min.js"></script>
   <script src="/common/color-collector.js"></script>
+  <script src="/common/helpers.js"></script>
   <script src="./dashboard.js"></script>
 </body>
 

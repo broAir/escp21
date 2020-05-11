@@ -20,6 +20,12 @@ var renderChartSessionChart = (currentSite, sessionLimitForCurrentSite) => {
       }]
     },
     options: {
+			tooltips: {
+				callbacks: {
+					// Display x Hr y Min in the tooltip
+					label: (tooltipItem, data) => convertMinToMinHrLabel(tooltipItem.yLabel)
+				}
+			},
       legend: {
         display: true
       },

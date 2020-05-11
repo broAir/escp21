@@ -87,6 +87,7 @@ var addNewTimeCollectionEntry = (data, appendToOldSession) => {
         timeSessionByHostEntry.favIconUrl = data.favIconUrl || timeSessionByHostEntry.favIconUrl;
         timeSessionByHostEntry.grad = timeSessionByHostEntry.grad;
         timeSessionByHostEntry.sessions = sessionsByHostname;
+        timeSessionByHostEntry.totalElapsedMs += data.elapsedMs;
 
         timeSessionsForToday.siteSessionData[hostName] = timeSessionByHostEntry;
         // If has gradient assigned
