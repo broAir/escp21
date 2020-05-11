@@ -1,0 +1,95 @@
+div {
+    margin-top: 5px;
+    padding: 5px;
+}
+
+.break {
+    flex-basis: 100%;
+    height: 0;
+}
+
+.flex-parent {
+    display: flex;
+    justify-content: space-between
+}
+
+.flex-item {
+    flex-grow: 1;
+}
+
+.legend-icon-img {
+    margin-top: 5px;
+    margin-bottom: 5.5px;
+}
+
+.chart-fav-labels {
+    padding-top: 10px;
+}
+
+.limit-set-message-container {
+    border-radius: 6px;
+    background-color: rgba(76, 175, 80, 0.35);
+    padding: 5px;
+}
+
+.limit-config-box {
+    padding: 10px;
+    border: solid;
+    border-width: thin;
+    border-style: ridge;
+    border-color: cornflowerblue;
+    background-color: aliceblue;
+}
+
+.limit-config-box-label {
+    width: 50%;
+    display: block;
+    margin-bottom: 5px;
+    margin-top: -25px;
+    background-color: white;
+    font-weight: 100;
+    font-size: larger;
+}
+
+.limit-config-box-tooltip {
+    display: none;
+    left: 50px;
+    margin-top: -25px;
+    position: relative;
+    background-color: honeydew;
+}
+
+.limit-config-box-label:hover+.limit-config-box-tooltip {
+    display: block;
+}
+
+.limit-config-box-tooltip:hover {
+    display: block;
+}
+
+.btn {
+    height: 17px;
+    border-radius: 7.5px;
+    border-color: cornflowerblue;
+    border-style: solid;
+    border-width: initial;
+    padding: 5px;
+    margin: 5px;
+    border-width: 1px;
+    cursor: pointer;
+    background-color: rgb(208, 232, 253);
+}
+
+.btn:hover {
+    background-color: rgb(145, 204, 255);
+    font-weight: 500;
+}
+
+.btn-lnk {
+    border: none;
+}
+
+.chart-container {
+    width: 500px;
+    height: 250px;
+}

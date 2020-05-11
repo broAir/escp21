@@ -20,12 +20,12 @@ var renderChartSessionChart = (currentSite, sessionLimitForCurrentSite) => {
       }]
     },
     options: {
-			tooltips: {
-				callbacks: {
-					// Display x Hr y Min in the tooltip
-					label: (tooltipItem, data) => convertMinToMinHrLabel(tooltipItem.yLabel)
-				}
-			},
+      tooltips: {
+        callbacks: {
+          // Display x Hr y Min in the tooltip
+          label: (tooltipItem, data) => convertMinToMinHrLabel(tooltipItem.yLabel)
+        }
+      },
       legend: {
         display: true
       },
@@ -99,6 +99,11 @@ document.addEventListener('DOMContentLoaded', () => {
       renderChartSessionChart(currentSite, sessionLimitForCurrentSite);
 
       $("#site-name").text(hostName);
+
+      $("#dashboard-link").click(e => {
+        e.preventDefault();
+        chrome.tabs.create({ url: chrome.runtime.getURL("/dashboard/dashboard.html") });
+      })
 
       if (sessionLimitForCurrentSite > 0) {
         $("#remove-limit-btn").show();

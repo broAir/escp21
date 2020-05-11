@@ -13,7 +13,6 @@
     "storage",
     "declarativeContent",
     "contextMenus",
-    "chrome://favicon/",
     "browser_action"
   ],
   "background": {
@@ -44,14 +43,5 @@
     "default_icon": "popup/popup.png",
     "default_popup": "popup/popup.html",
     "default_title": "This is a tooltip"
-  },
-  "chrome_url_overrides": {
-    "newtab": "dashboard/dashboard.html"
-  },
-  "chrome_settings_overrides": {
-    "homepage": "http://www.homepage.com",
-    "startup_pages": [
-      "http://www.startup.com"
-    ]
   }
 }

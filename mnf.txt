@@ -60,3 +60,6 @@
     ]
   }
 }
+"chrome_url_overrides": {
+    "newtab": "dashboard/dashboard.html"
+  }
