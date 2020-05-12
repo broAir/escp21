@@ -80,7 +80,7 @@ var renderChartSessionChart = (currentSite, sessionLimitForCurrentSite) => {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  
+
   $("#dashboard-link").click(e => {
     e.preventDefault();
     chrome.tabs.create({ url: chrome.runtime.getURL("/dashboard/dashboard.html") });
@@ -91,16 +91,17 @@ document.addEventListener('DOMContentLoaded', () => {
     var url = new URL(activeTab.url);
     var hostName = url.hostname;
     var today = new Date().toDateString();
-    
-    $("#site-name").text(hostName);
 
+    $("#site-name").text(hostName);
     chrome.storage.local.get([today, sessionLimitStorageKey], (storageResultObj) => {
 
-      console.log(storageResultObj);
       var siteSessionDataForToday = storageResultObj[today]
         && storageResultObj[today].siteSessionData || {};
       var currentSite = siteSessionDataForToday[hostName];
       if (!currentSite) return;
+
+      $("#current-elapsed-value").html("Today you have been browsing for <b>"
+        + currentSite.sessions.reduce((sum, b) => sum + (b.elapsedMs / 60000), 0).toFixed(0) + " min</b>");
 
       var limits = storageResultObj[sessionLimitStorageKey] || {};
       var sessionLimitForCurrentSite = (limits[hostName] && limits[hostName].limitMin) || 0;
@@ -108,6 +109,7 @@ document.addEventListener('DOMContentLoaded', () => {
       renderChartSessionChart(currentSite, sessionLimitForCurrentSite);
 
       if (sessionLimitForCurrentSite > 0) {
+        $("#current-limit-value").html("Current limit for this site is <b>" + sessionLimitForCurrentSite + " min</b>")
         $("#remove-limit-btn").show();
         $("#remove-limit-btn").click((e) => {
           delete limits[hostName];

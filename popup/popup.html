@@ -23,26 +23,37 @@
 
   <div id='limit-set-message-container' style="display: none;" class="limit-set-message-container">
   </div>
-  <div class="limit-config-box flex-parent">
+  <div class="info-box flex-parent">
     <div>
-      <div class="limit-config-box-label my-tooltip-handle">
-        <label style="padding: 5px;">Limit</label>
+      <div class="info-box-label my-tooltip-handle">
+        <label style="padding: 5px;">Info</label>
       </div>
-      <div class="my-tooltip limit-config-box-tooltip">
-        <small>You can set a time limit <b>for session</b>.
-          <br />For example, if you scroll instagram continuously for 15 mins the
-          alert will be displayed.
-        </small>
-      </div>
-      <label>Limit in min</label>
-      <input type="number" id="limit-val" placeholder="15" value="15" style="width: 100%;" />
-      <label>Alert text (optional)</label>
-      <textarea type="text" id="limit-text" style="width:100%;">
+      <label id="current-limit-value" class="label-box"></label>
+      <br />
+      <label id="current-elapsed-value" class="label-box"></label>
+      <br />
+      <div class="flex-parent">
+        <div class="div">
+          <label>Limit in min</label>
+          <input type="number" id="limit-val" placeholder="15" value="15" style="width: 100%;" />
+          <label>Alert text (optional)</label>
+          <textarea type="text" id="limit-text" style="width:100%;">
       Hey John! You have been browsing here for too long! Take a break :)
     </textarea>
-      <div class="flex-parent">
-        <a class="mybtn" id="set-limit-btn">Set limit</a>
-        <a class="mybtn" id="remove-limit-btn" style="display: none;">Remove limit</a>
+          <div class="flex-parent">
+            <a class="mybtn" id="set-limit-btn">Set limit</a>
+            <a class="mybtn" id="remove-limit-btn" style="display: none;">Remove limit</a>
+          </div>
+        </div>
+        <div class="div ">
+          <br />
+          <div class="info-box-tooltip">
+            <small>You can set a time limit <b>for session</b>.
+              <br />For example, if you scroll instagram continuously for 15 mins the
+              alert will be displayed.
+            </small>
+          </div>
+        </div>
       </div>
     </div>
   </div>

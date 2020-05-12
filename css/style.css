@@ -32,7 +32,12 @@
     padding: 5px;
 }
 
-.limit-config-box {
+.label-box {
+    font-size: small;
+    padding-top: 10px;
+}
+
+.info-box {
     padding: 10px;
     border: solid;
     border-width: thin;
@@ -41,7 +46,7 @@
     background-color: aliceblue;
 }
 
-.limit-config-box-label {
+.info-box-label {
     width: 50%;
     display: block;
     margin-bottom: 5px;
@@ -51,10 +56,9 @@
     font-size: larger;
 }
 
-.limit-config-box-tooltip {
-    display: none;
-    left: 50px;
-    margin-top: -25px;
+.info-box-tooltip {
+    margin: 5px;
+    height: fit-content;
     position: relative;
     background-color: honeydew;
 }
