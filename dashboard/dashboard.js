@@ -1,3 +1,5 @@
+const dailyGoalKey = "_DailyGoal";
+
 var fillSelectList = (id, data, val) => {
 	var select = $(id);
 	select.html(data.reduce((s, x) => s + "<option>" + x + "</option>", ""));
@@ -143,6 +145,25 @@ var renderWeeklyChart = () => {
 			chartRenderOptions.data.labels.push(dateEntriesForLastWeek[i].toDateString().slice(0, -5));
 		});
 
+		// Fill daily goal line
+		var dailyUsageGoal = (storageResultObj[dailyGoalKey] || {}).goalHr || 0;
+		if (dailyUsageGoal > 0) {
+			chartRenderOptions.data.datasets.push({
+				label: 'Daily goal',
+				data: new Array(dateEntriesForLastWeek.length),
+				backgroundColor: 'rgba(76, 175, 80, 0.1)',
+				borderColor: 'rgba(76, 175, 80, 0.8)',
+				borderWidth: 1.5,
+				lineTension: 0.01,
+				type: 'line',
+				fill: '-1',
+				spanGaps: true,
+				order: 0
+			});
+			chartRenderOptions.data.datasets[1].data[0] = dailyUsageGoal;
+			chartRenderOptions.data.datasets[1].data[dateEntriesForLastWeek.length - 1] = dailyUsageGoal;
+		}
+
 		var myChart = new Chart(ctx, chartRenderOptions);
 		window.weeklyChart = myChart;
 		window.weeklyChartRenderOptions = chartRenderOptions;
@@ -242,8 +263,13 @@ var renderDayChart = (day) => {
 				if (elapsedA > elapsedB) return -1;
 				if (elapsedA < elapsedB) return 1;
 				return 0;
+				// var elapsedA = siteSessionDataForToday[a].totalElapsedMs;
+				// var elapsedB = siteSessionDataForToday[b].totalElapsedMs;
+				// if (elapsedA > elapsedB) return -1;
+				// if (elapsedA < elapsedB) return 1;
+				// return 0;
 			})
-			// Take only top 5
+			// Take only top 10
 			.slice(0, 10);
 
 		hostEntryStorageKeys.forEach((hostNameKey) => {
@@ -296,12 +322,65 @@ var bindEvents = () => {
 		var day = e.currentTarget.value;
 		renderDayChart(day);
 	});
+	$("#goal-btn").click(e => {
+		var goalHr = +$("#goal-hr-val").val();
+		var goalMin = +$("#goal-m-val").val();
+		if (goalHr > 0 || goalMin > 0) {
+			chrome.storage.local.get([dailyGoalKey], (storageResultObj) => {
+				var goals = storageResultObj[dailyGoalKey] || {};
+				goals = {
+					goalMin: goalMin + goalHr * 60,
+					goalMs: (goalMin + goalHr) * 60 * 1000,
+					goalHr: goalHr + goalMin / 60,
+					evenHr: goalHr,
+					evenMin: goalMin
+				};
+				chrome.storage.local.set({ [dailyGoalKey]: goals });
+
+				// re-render chart
+				var dailyUsageGoal = goals.goalHr;
+				var weeklyChartRenderOptions = window.weeklyChartRenderOptions;
+
+				if (weeklyChartRenderOptions.data.datasets.length > 1) {
+					weeklyChartRenderOptions.data.datasets.pop();
+				}
+				weeklyChartRenderOptions.data.datasets.push({
+					label: 'Daily goal',
+					data: new Array(weeklyChartRenderOptions.data.datasets[0].data.length),
+					backgroundColor: 'rgba(76, 175, 80, 0.1)',
+					borderColor: 'rgba(76, 175, 80, 0.8)',
+					borderWidth: 1.5,
+					lineTension: 0.01,
+					type: 'line',
+					fill: '-1',
+					spanGaps: true,
+					order: 0
+				});
+				weeklyChartRenderOptions.data.datasets[1].data[0] = dailyUsageGoal;
+				weeklyChartRenderOptions.data.datasets[1].data[weeklyChartRenderOptions.data.datasets[0].data.length - 1] = dailyUsageGoal;
+
+				window.weeklyChart.data = weeklyChartRenderOptions.data;
+				window.weeklyChart.update();
+				window.weeklyChartRenderOptions = weeklyChartRenderOptions;
+			})
+		}
+	});
+}
+var fillTextData = () => {
+	chrome.storage.local.get([dailyGoalKey], (storageResultObj) => {
+		var dailyGoalVal = storageResultObj[dailyGoalKey];
+		if (dailyGoalVal) {
+			$("#goal-hr-val").val(dailyGoalVal.evenHr);
+			$("#goal-m-val").val(dailyGoalVal.evenMin);
+		}
+	});
 }
 
 $(document).ready(function () {
 	renderChartForToday();
 	renderWeeklyChart();
 	bindEvents();
+	fillTextData();
 });
 
 // if(!_app._on){

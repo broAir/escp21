@@ -14,7 +14,7 @@
 <body>
   <div class="flex-parent">
     <h2 id="site-name" class="popup-site-name"></h2>
-    <a class="btn btn-lnk" id="dashboard-link">Go to dashboard! ></a>
+    <a class="mybtn mybtn-lnk" id="dashboard-link">Go to dashboard! ></a>
   </div>
   <div class="chart-container">
     <canvas id="site-chart"></canvas>
@@ -25,10 +25,10 @@
   </div>
   <div class="limit-config-box flex-parent">
     <div>
-      <div class="limit-config-box-label">
+      <div class="limit-config-box-label my-tooltip-handle">
         <label style="padding: 5px;">Limit</label>
       </div>
-      <div class="limit-config-box-tooltip">
+      <div class="my-tooltip limit-config-box-tooltip">
         <small>You can set a time limit <b>for session</b>.
           <br />For example, if you scroll instagram continuously for 15 mins the
           alert will be displayed.
@@ -41,8 +41,8 @@
       Hey John! You have been browsing here for too long! Take a break :)
     </textarea>
       <div class="flex-parent">
-        <a class="btn" id="set-limit-btn">Set limit</a>
-        <a class="btn" id="remove-limit-btn" style="display: none;">Remove limit</a>
+        <a class="mybtn" id="set-limit-btn">Set limit</a>
+        <a class="mybtn" id="remove-limit-btn" style="display: none;">Remove limit</a>
       </div>
     </div>
   </div>

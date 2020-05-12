@@ -1,4 +1,4 @@
-div {
+.div {
     margin-top: 5px;
     padding: 5px;
 }
@@ -59,15 +59,19 @@ div {
     background-color: honeydew;
 }
 
-.limit-config-box-label:hover+.limit-config-box-tooltip {
+.my-tooltip {
+    display: none;
+}
+
+.my-tooltip-handle:hover+.my-tooltip {
     display: block;
 }
 
-.limit-config-box-tooltip:hover {
+.my-tooltip:hover {
     display: block;
 }
 
-.btn {
+.mybtn {
     height: 17px;
     border-radius: 7.5px;
     border-color: cornflowerblue;
@@ -80,13 +84,23 @@ div {
     background-color: rgb(208, 232, 253);
 }
 
-.btn:hover {
+.mybtn:hover {
     background-color: rgb(145, 204, 255);
     font-weight: 500;
 }
 
-.btn-lnk {
+.mybtn-lnk {
     border: none;
+}
+
+.btn {
+    border-color: cornflowerblue;
+    border-style: solid;
+    border-width: initial;
+    border-width: 1px;
+    border-radius: 7.5px;
+    cursor: pointer;
+    background-color: rgb(208, 232, 253);
 }
 
 .chart-container {

@@ -57,12 +57,13 @@ var renderChartSessionChart = (currentSite, sessionLimitForCurrentSite) => {
     chartRenderData.data.datasets[0].data.push((siteSessionEntry.elapsedMs / 60000).toFixed(3));
   });
 
+  // add session limit line
   if (sessionLimitForCurrentSite > 0) {
     chartRenderData.data.datasets.push({
       label: 'session limit',
       data: new Array(dataForToday.length),
       backgroundColor: 'rgba(76, 175, 80, 0.1)',
-      borderColor: 'rgba(76, 175, 80, 0.5)',
+      borderColor: 'rgba(76, 175, 80, 0.8)',
       borderWidth: 1.5,
       lineTension: 0.01,
       type: 'line',
