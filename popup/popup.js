@@ -79,11 +79,19 @@ var renderChartSessionChart = (currentSite, sessionLimitForCurrentSite) => {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  
+  $("#dashboard-link").click(e => {
+    e.preventDefault();
+    chrome.tabs.create({ url: chrome.runtime.getURL("/dashboard/dashboard.html") });
+  });
+
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     var activeTab = tabs[0];
     var url = new URL(activeTab.url);
     var hostName = url.hostname;
     var today = new Date().toDateString();
+    
+    $("#site-name").text(hostName);
 
     chrome.storage.local.get([today, sessionLimitStorageKey], (storageResultObj) => {
 
@@ -97,13 +105,6 @@ document.addEventListener('DOMContentLoaded', () => {
       var sessionLimitForCurrentSite = (limits[hostName] && limits[hostName].limitMin) || 0;
 
       renderChartSessionChart(currentSite, sessionLimitForCurrentSite);
-
-      $("#site-name").text(hostName);
-
-      $("#dashboard-link").click(e => {
-        e.preventDefault();
-        chrome.tabs.create({ url: chrome.runtime.getURL("/dashboard/dashboard.html") });
-      })
 
       if (sessionLimitForCurrentSite > 0) {
         $("#remove-limit-btn").show();
