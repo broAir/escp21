@@ -1,4 +1,4 @@
-var sessionLimitStorageKey = "_SessionLimits";
+const sessionLimitStorageKey = "_SessionLimits";
 
 var renderChartSessionChart = (currentSite, sessionLimitForCurrentSite) => {
   var ctx = document.getElementById('site-chart').getContext('2d');

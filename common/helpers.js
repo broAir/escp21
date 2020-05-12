@@ -2,6 +2,17 @@ var sortStringByDateFn = (a, b) => {
 
 }
 
+var updateChartData = (ctx, chartObj, chartRenderOptions) => {
+    var chart = chartObj || {};
+    if (chartObj) {
+        chart.data = chartRenderOptions.data;
+        chart.update();
+    } else {
+        chart = new Chart(ctx, chartRenderOptions);
+    }
+    return chart;
+}
+
 var extractDatesFromStorageObjAndSort = (storageObj, take, desc) =>
     Object.keys(storageObj)
         // only time-entry keys, no system keys (starts with _)

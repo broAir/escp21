@@ -1,4 +1,13 @@
 const dailyGoalKey = "_DailyGoal";
+const sessionLimitStorageKey = "_SessionLimits";
+
+var allStorageData = {};
+
+var fetchAllStorageData = () => {
+	chrome.storage.local.get(null, (storageResultObj) => {
+		allStorageData = storageResultObj;
+	});
+}
 
 var fillSelectList = (id, data, val) => {
 	var select = $(id);
@@ -29,6 +38,89 @@ var renderCategoriesChart = (labels, chartDataSets) => {
 	}
 
 	var pieChart = new Chart(ctx, chartRenderData);
+}
+
+var renderSelectedHostChart = (selectedHost) => {
+	var sessionLimitForSelectedSite = ((allStorageData[sessionLimitStorageKey] || {})[selectedHost.hostName] || {}).limitMin;
+
+	var ctx = document.getElementById('selected-host-chart').getContext('2d');
+
+	var grad = ctx.createLinearGradient(0, 0, 0, 150);
+	grad.addColorStop(0.5, selectedHost.grad[0] ?? "#6495ed");
+	grad.addColorStop(1, selectedHost.grad[1] ?? "#6495ed");
+
+	var chartRenderData = {
+		type: 'line',
+		data: {
+			labels: [],
+			datasets: [{
+				label: selectedHost.hostName,
+				data: [],
+				backgroundColor: grad,
+				borderColor: grad,
+				borderWidth: 1
+			}]
+		},
+		options: {
+			lineHeightAnnotation: {
+				always: false
+			},
+			tooltips: {
+				callbacks: {
+					// Display x Hr y Min in the tooltip
+					label: (tooltipItem, data) => convertMinToMinHrLabel(tooltipItem.yLabel)
+				}
+			},
+			legend: {
+				display: true
+			},
+			scales: {
+				yAxes: [{
+					scaleLabel: {
+						labelString: 'Min',
+						display: true,
+						padding: 2
+					},
+					ticks: {
+						beginAtZero: true
+					}
+				}],
+				xAxes: [{
+					scaleLabel: {
+						labelString: 'Time of the day',
+						display: true,
+						padding: 1
+					}
+				}]
+			}
+		}
+	};
+
+	var dataForToday = selectedHost.sessions;
+	dataForToday.forEach((siteSessionEntry) => {
+		chartRenderData.data.labels.push(siteSessionEntry.timeShort);
+		chartRenderData.data.datasets[0].data.push((siteSessionEntry.elapsedMs / 60000).toFixed(3));
+	});
+
+	// add session limit line
+	if (sessionLimitForSelectedSite > 0) {
+		chartRenderData.data.datasets.push({
+			label: 'session limit',
+			data: new Array(dataForToday.length),
+			backgroundColor: 'rgba(76, 175, 80, 0.1)',
+			borderColor: 'rgba(76, 175, 80, 0.8)',
+			borderWidth: 1.5,
+			lineTension: 0.01,
+			type: 'line',
+			fill: '-1',
+			spanGaps: true,
+			order: 0
+		});
+		chartRenderData.data.datasets[1].data[0] = sessionLimitForSelectedSite;
+		chartRenderData.data.datasets[1].data[dataForToday.length - 1] = sessionLimitForSelectedSite;
+	}
+
+	window.selectedHostChart = updateChartData(ctx, window.selectedHostChart, chartRenderData);
 }
 
 var renderWeeklyChart = () => {
@@ -300,6 +392,7 @@ var renderDayChart = (day) => {
 			window.dailyChart = new Chart(ctx, chartRenderOptions);
 		}
 
+		window.dailyChart.hostEntryStorageKeys = hostEntryStorageKeys;
 		window.dailyChartRenderOptions = chartRenderOptions;
 		$("#chart-fav-labels").html(window.dailyChart.generateLegend());
 	});
@@ -322,6 +415,7 @@ var bindEvents = () => {
 		var day = e.currentTarget.value;
 		renderDayChart(day);
 	});
+
 	$("#goal-btn").click(e => {
 		var goalHr = +$("#goal-hr-val").val();
 		var goalMin = +$("#goal-m-val").val();
@@ -365,6 +459,14 @@ var bindEvents = () => {
 			})
 		}
 	});
+
+	$("#basicChart").click(evt => {
+		var activePoints = dailyChart.getElementsAtEvent(evt);
+		var selectedHost = dailyChart.hostEntryStorageKeys[activePoints[0]._index];
+		var selectedDate = $("#select-day").val();
+		var selectedItem = allStorageData[selectedDate].siteSessionData[selectedHost];
+		renderSelectedHostChart(selectedItem);
+	});
 }
 var fillTextData = () => {
 	chrome.storage.local.get([dailyGoalKey], (storageResultObj) => {
@@ -377,6 +479,7 @@ var fillTextData = () => {
 }
 
 $(document).ready(function () {
+	fetchAllStorageData();
 	renderChartForToday();
 	renderWeeklyChart();
 	bindEvents();
