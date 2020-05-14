@@ -53,7 +53,8 @@ var renderChartSessionChart = (currentSite, sessionLimitForCurrentSite) => {
 
   var dataForToday = currentSite.sessions;
   if (dataForToday.length == 1) {
-    chartRenderData.data.datasets[0].data.push(0);
+    chartRenderData.data.labels.push("");
+    chartRenderData.data.datasets[0].data.push("0");
   }
   dataForToday.forEach((siteSessionEntry) => {
     chartRenderData.data.labels.push(siteSessionEntry.timeShort);

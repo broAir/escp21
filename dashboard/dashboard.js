@@ -99,7 +99,8 @@ var renderSelectedHostChart = (selectedHost) => {
 	var dataForToday = selectedHost.sessions;
 
 	if (dataForToday.length == 1) {
-		chartRenderData.data.datasets[0].data.push(0);
+		chartRenderData.data.labels.push("");
+		chartRenderData.data.datasets[0].data.push("0");
 	}
 	dataForToday.forEach((siteSessionEntry) => {
 		chartRenderData.data.labels.push(siteSessionEntry.timeShort);
@@ -167,7 +168,7 @@ var renderWeeklyChart = () => {
 					},
 					offset: true,
 					ticks: {
-						stepSize: 2,
+						stepSize: 1,
 						beginAtZero: true
 					}
 				}],
@@ -236,6 +237,11 @@ var renderWeeklyChart = () => {
 			.map(x => x / (1000 * 60 * 60));
 
 
+		if (elapsedHrsForLastWeek.length == 1) {
+			chartRenderOptions.data.datasets[0].data.push("0");
+			chartRenderOptions.data.labels.push("");
+		}
+
 		elapsedHrsForLastWeek.forEach((x, i) => {
 			chartRenderOptions.data.datasets[0].data.push(x.toFixed(2));
 			chartRenderOptions.data.labels.push(dateEntriesForLastWeek[i].toDateString().slice(0, -5));
@@ -258,7 +264,7 @@ var renderWeeklyChart = () => {
 			});
 			chartRenderOptions.data.datasets[1].data[0] = dailyUsageGoal;
 			dateEntriesForLastWeek.length == 1 ?
-				chartRenderOptions.data.datasets[1].data[2] = dailyUsageGoal :
+				chartRenderOptions.data.datasets[1].data[1] = dailyUsageGoal :
 				chartRenderOptions.data.datasets[1].data[dateEntriesForLastWeek.length - 1] = dailyUsageGoal;
 		}
 
@@ -458,7 +464,7 @@ var bindEvents = () => {
 				});
 				weeklyChartRenderOptions.data.datasets[1].data[0] = dailyUsageGoal;
 				weeklyChartRenderOptions.data.datasets[0].data.length == 1 ?
-					weeklyChartRenderOptions.data.datasets[1].data[2] = dailyUsageGoal :
+					weeklyChartRenderOptions.data.datasets[1].data[1] = dailyUsageGoal :
 					weeklyChartRenderOptions.data.datasets[1].data[weeklyChartRenderOptions.data.datasets[0].data.length - 1] = dailyUsageGoal;
 
 				window.weeklyChart.data = weeklyChartRenderOptions.data;

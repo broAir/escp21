@@ -129,7 +129,7 @@ var collectTabData = (tab) => {
     var pendingUrl = tab.pendingUrl;
     var lastUrl = tab.url;
     var pendingUrlHostName = tab.pendingUrl && new URL(pendingUrl).host || null;
-    var lastUrlHostName = new URL(lastUrl).host;
+    var lastUrlHostName = lastUrl == "" ? "" : new URL(lastUrl).host;
 
     // if navigated to a different host name
     if (lastUrlHostName != pendingUrlHostName
@@ -171,6 +171,8 @@ var startTrackingActiveTabTime = () => {
 chrome.webNavigation.onCommitted.addListener((details) => {
     // We are interested only in the top frame
     if (details.frameId != 0) return;
+    // this means the page has been reloaded
+    if (details.transitionType == "reload") return;
     // Navigated within the same host, so skip the tracking
     if (new URL(details.url).hostname == lastActiveTabData.hostName) return;
 
