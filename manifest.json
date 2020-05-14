@@ -32,6 +32,17 @@
       "js": [
         "content.js"
       ]
+    },
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "inject-dashboard.js"
+      ],
+      "match_about_blank": true,
+      "run_at": "document_start",
+      "all_frames": true
     }
   ],
   "options_ui": {

@@ -99,5 +99,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             sendResponse({ hostName: window.location.host, favIconUrl: document.querySelectorAll('[rel~="icon"]')[0].href });
             break;
         }
+        //https://stackoverflow.com/questions/29632647/detect-if-audio-is-playing-in-browser-javascript
+        case 'checkIfMediaPlay': {
+            sendResponse({
+                isPlaying: ([...Array.from(document.querySelectorAll('video')),
+                ...Array.from(document.querySelectorAll('audio'))] || [])
+                    .some(media => !media.paused)
+            });
+        }
     }
 });

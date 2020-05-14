@@ -122,6 +122,7 @@ var saveSessionData = (tabId, windowId, hostname, favIconUrl) => {
     }
     // empty local storage for this tab
     chrome.storage.sync.remove([start_key]);
+    delete chrome.storage.sync[start_key];
 }
 
 var collectTabData = (tab) => {
@@ -136,22 +137,44 @@ var collectTabData = (tab) => {
         || !pendingUrlHostName) {
         collectFavIconUrlFromTheTab(tab)
             .then((favIconUrl) => {
-                saveSessionData(tab.tabId, tab.windowId, lastUrlHostName, favIconUrl);
+                saveSessionData(tab.id, tab.windowId, lastUrlHostName, favIconUrl);
             })
     }
 }
 
-// when something inside a tab (active or not) happens
-// i.e. telegram notification
-// chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
-// })
+var isTracking = (tabId, windowId) => {
+    return (chrome.storage.sync[getStorageKeyForTab(tabId, windowId, "start")] && true) || false;
+}
 
-chrome.webNavigation.onCommitted.addListener((details) => {
-    chrome.tabs.get(details.tabId, (tab) => {
-        if (tab.frameId != 0) return;
-        var start_key = getStorageKeyForTab(tab.tabId, tab.windowId, "start");
+var startTrackingTabTime = (tabId) => {
+    chrome.tabs.get(tabId, (tab) => {
+        // preserve this tab data for future
+        lastActiveTabData.tabId = tab.id;
+        lastActiveTabData.windowId = tab.windowId;
+        lastActiveTabData.hostName = (tab.url && new URL(tab.url).host) || "";
+
+        var start_key = getStorageKeyForTab(tab.id, tab.windowId, "start");
         chrome.storage.sync[start_key] = new Date();
     });
+}
+
+var startTrackingActiveTabTime = () => {
+    chrome.tabs.query({ active: true }, (tabs) => {
+        var activeTab = tabs[0];
+        if (!activeTab)
+            return console.error("active tab was null");
+
+        startTrackingTabTime(activeTab.id);
+    });
+}
+
+chrome.webNavigation.onCommitted.addListener((details) => {
+    // We are interested only in the top frame
+    if (details.frameId != 0) return;
+    // Navigated within the same host, so skip the tracking
+    if (new URL(details.url).hostname == lastActiveTabData.hostName) return;
+
+    startTrackingTabTime(details.tabId);
 });
 
 // This event is fired when we havigate to a different page within one tab 
@@ -181,16 +204,7 @@ chrome.tabs.onActivated.addListener((activeInfo) => {
         // collect data
         collectTabData(lastActiveTab);
     });
-
-    chrome.tabs.get(activeInfo.tabId, (tab) => {
-        // preserve this tab data for future
-        lastActiveTabData.tabId = tab.id;
-        lastActiveTabData.windowId = tab.windowId;
-        lastActiveTabData.hostName = tab.url ?? new URL(tab.url).host ?? null;
-
-        var start_key = getStorageKeyForTab(tab.tabId, tab.windowId, "start");
-        chrome.storage.sync[start_key] = new Date();
-    });
+    startTrackingTabTime(activeInfo.tabId);
 });
 
 // chrome.tabs.onSelectionChanged.addListener((tabId, selectInfo) => {
@@ -199,7 +213,45 @@ chrome.tabs.onActivated.addListener((activeInfo) => {
 // });
 
 chrome.tabs.onRemoved.addListener((tabId, removeInfo) => {
+    // If user has closed the tab that was last active
     if (tabId == lastActiveTabData.tabId) {
         saveSessionData(lastActiveTabData.tabId, lastActiveTabData.windowId, lastActiveTabData.hostName, null);
     }
 });
+
+chrome.idle.setDetectionInterval(5 * 60);//(15);
+chrome.idle.onStateChanged.addListener((newState) => {
+    console.log(new Date().toTimeString() + newState);
+    if (newState == "active") {
+        // window has been activated
+        if (!isTracking(lastActiveTabData.windowId, lastActiveTabData.tabId)) {
+            startTrackingTabTime(lastActiveTabData.tabId);
+        }
+    } else {
+        // The pc is locked so we can flush the data
+        if (newState == "locked") {
+            saveSessionData(lastActiveTabData.tabId, lastActiveTabData.windowId, lastActiveTabData.hostName, null);
+        }
+        if (newState == "idle") {
+            // if user is idle we need to get last focused window and check if window is focused
+            chrome.windows.getLastFocused((windowinfo) => {
+                // user has switched the window. means we can flush session data
+                if (!windowinfo.focused)
+                    saveSessionData(lastActiveTabData.tabId, lastActiveTabData.windowId, lastActiveTabData.hostName, null);
+
+                // if user is idle and window is focused we
+                // need to check if there is any video playing on the page
+                // - if video playing - keep tracking time
+                // - if no video = flush data to storage and stop tracking
+                if (windowinfo.focused) {
+                    chrome.tabs.sendMessage(lastActiveTabData.tabId, { type: "checkIfMediaPlay" }, null, (response) => {
+                        if (!response.isPlaying) {
+                            saveSessionData(lastActiveTabData.tabId, lastActiveTabData.windowId, lastActiveTabData.hostName, null);
+                        }
+                    });
+                }
+                console.log(windowinfo);
+            })
+        }
+    }
+})
