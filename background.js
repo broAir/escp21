@@ -200,6 +200,7 @@ chrome.webNavigation.onBeforeNavigate.addListener((evt) => {
 chrome.tabs.onActivated.addListener((activeInfo) => {
     // Collect data from the previous tab
     chrome.tabs.get(lastActiveTabData.tabId, (lastActiveTab) => {
+        // tab will be empty in case it was removed
         if (!lastActiveTab) return;
         // collect data
         collectTabData(lastActiveTab);
@@ -245,7 +246,7 @@ chrome.idle.onStateChanged.addListener((newState) => {
                 // - if no video = flush data to storage and stop tracking
                 if (windowinfo.focused) {
                     chrome.tabs.sendMessage(lastActiveTabData.tabId, { type: "checkIfMediaPlay" }, null, (response) => {
-                        if (!response.isPlaying) {
+                        if (!response || !response.isPlaying) {
                             saveSessionData(lastActiveTabData.tabId, lastActiveTabData.windowId, lastActiveTabData.hostName, null);
                         }
                     });

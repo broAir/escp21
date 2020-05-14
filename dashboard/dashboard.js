@@ -97,6 +97,10 @@ var renderSelectedHostChart = (selectedHost) => {
 	};
 
 	var dataForToday = selectedHost.sessions;
+
+	if (dataForToday.length == 1) {
+		chartRenderData.data.datasets[0].data.push(0);
+	}
 	dataForToday.forEach((siteSessionEntry) => {
 		chartRenderData.data.labels.push(siteSessionEntry.timeShort);
 		chartRenderData.data.datasets[0].data.push((siteSessionEntry.elapsedMs / 60000).toFixed(3));
@@ -216,7 +220,7 @@ var renderWeeklyChart = () => {
 	// get all storage entries
 	chrome.storage.local.get(null, (storageResultObj) => {
 		// order keys by date
-		var dateEntriesForLastWeek = extractDatesFromStorageObjAndSort(storageResultObj, 7);
+		var dateEntriesForLastWeek = extractDatesFromStorageObjAndSort(storageResultObj, 14);
 
 		var elapsedHrsForLastWeek = dateEntriesForLastWeek
 			.map(x => {
@@ -242,7 +246,7 @@ var renderWeeklyChart = () => {
 		if (dailyUsageGoal > 0) {
 			chartRenderOptions.data.datasets.push({
 				label: 'Daily goal',
-				data: new Array(dateEntriesForLastWeek.length),
+				data: new Array(dateEntriesForLastWeek.length == 1 ? 2 : dateEntriesForLastWeek.length),
 				backgroundColor: 'rgba(76, 175, 80, 0.1)',
 				borderColor: 'rgba(76, 175, 80, 0.8)',
 				borderWidth: 1.5,
@@ -253,7 +257,9 @@ var renderWeeklyChart = () => {
 				order: 0
 			});
 			chartRenderOptions.data.datasets[1].data[0] = dailyUsageGoal;
-			chartRenderOptions.data.datasets[1].data[dateEntriesForLastWeek.length - 1] = dailyUsageGoal;
+			dateEntriesForLastWeek.length == 1 ?
+				chartRenderOptions.data.datasets[1].data[2] = dailyUsageGoal :
+				chartRenderOptions.data.datasets[1].data[dateEntriesForLastWeek.length - 1] = dailyUsageGoal;
 		}
 
 		var myChart = new Chart(ctx, chartRenderOptions);
@@ -440,7 +446,7 @@ var bindEvents = () => {
 				}
 				weeklyChartRenderOptions.data.datasets.push({
 					label: 'Daily goal',
-					data: new Array(weeklyChartRenderOptions.data.datasets[0].data.length),
+					data: new Array(weeklyChartRenderOptions.data.datasets[0].data.length == 1 ? 2 : weeklyChartRenderOptions.data.datasets[0].data.length),
 					backgroundColor: 'rgba(76, 175, 80, 0.1)',
 					borderColor: 'rgba(76, 175, 80, 0.8)',
 					borderWidth: 1.5,
@@ -451,7 +457,9 @@ var bindEvents = () => {
 					order: 0
 				});
 				weeklyChartRenderOptions.data.datasets[1].data[0] = dailyUsageGoal;
-				weeklyChartRenderOptions.data.datasets[1].data[weeklyChartRenderOptions.data.datasets[0].data.length - 1] = dailyUsageGoal;
+				weeklyChartRenderOptions.data.datasets[0].data.length == 1 ?
+					weeklyChartRenderOptions.data.datasets[1].data[2] = dailyUsageGoal :
+					weeklyChartRenderOptions.data.datasets[1].data[weeklyChartRenderOptions.data.datasets[0].data.length - 1] = dailyUsageGoal;
 
 				window.weeklyChart.data = weeklyChartRenderOptions.data;
 				window.weeklyChart.update();
