@@ -5,8 +5,8 @@ var lastActiveTabData = {
 }
 
 this.settings = {
-    // threshold in seconds to record the elapsed time for the session (def: 10 sec)
-    elapsedThreshold: 10 * 1000,
+    // threshold in seconds to record the elapsed time for the session (def: 8 sec)
+    elapsedThreshold: 8 * 1000,
     // threshold in ms which will tell to append value to the old session (def: 5 min)
     appendToOldSessionThreshold: 5 * 60 * 1000
 }
@@ -88,7 +88,7 @@ var addNewTimeCollectionEntry = (data, appendToOldSession) => {
         timeSessionByHostEntry.grad = timeSessionByHostEntry.grad;
         timeSessionByHostEntry.sessions = sessionsByHostname;
         timeSessionByHostEntry.totalElapsedMs = (timeSessionByHostEntry.totalElapsedMs || 0) + data.elapsedMs;
-
+        console.log(sessionsByHostname[sessionsByHostname.length - 1]);
         timeSessionsForToday.siteSessionData[hostName] = timeSessionByHostEntry;
         // If has gradient assigned
         if (timeSessionByHostEntry.grad ?? false) {
@@ -105,14 +105,14 @@ var addNewTimeCollectionEntry = (data, appendToOldSession) => {
     });
 }
 
-var saveSessionData = (tabId, windowId, hostname, favIconUrl) => {
+var saveSessionData = (tabId, windowId, hostname, favIconUrl, ignoreThreshold) => {
     var start_key = getStorageKeyForTab(tabId, windowId, "start");
     var startDateTime = chrome.storage.sync[start_key] ?? new Date();
     var elapsedDateTime = new Date();
     var elapsedMs = elapsedDateTime - startDateTime;
 
     // Do not save if less then threshold
-    if (elapsedMs >= settings.elapsedThreshold) {
+    if (ignoreThreshold || elapsedMs >= settings.elapsedThreshold) {
         addNewTimeCollectionEntry({
             startDate: startDateTime,
             elapsedMs: elapsedMs,
@@ -120,15 +120,16 @@ var saveSessionData = (tabId, windowId, hostname, favIconUrl) => {
             favIconUrl: favIconUrl
         }, true);
     }
+
     // empty local storage for this tab
     chrome.storage.sync.remove([start_key]);
     delete chrome.storage.sync[start_key];
 }
 
-var collectTabData = (tab) => {
+var collectTabData = (tab, ignoreThreshold) => {
     var pendingUrl = tab.pendingUrl;
     var lastUrl = tab.url;
-    var pendingUrlHostName = tab.pendingUrl && new URL(pendingUrl).host || null;
+    var pendingUrlHostName = pendingUrl && new URL(pendingUrl).host || null;
     var lastUrlHostName = lastUrl == "" ? "" : new URL(lastUrl).host;
 
     // if navigated to a different host name
@@ -137,7 +138,7 @@ var collectTabData = (tab) => {
         || !pendingUrlHostName) {
         collectFavIconUrlFromTheTab(tab)
             .then((favIconUrl) => {
-                saveSessionData(tab.id, tab.windowId, lastUrlHostName, favIconUrl);
+                saveSessionData(tab.id, tab.windowId, lastUrlHostName, favIconUrl, ignoreThreshold);
             })
     }
 }
@@ -146,15 +147,19 @@ var isTracking = (tabId, windowId) => {
     return (chrome.storage.sync[getStorageKeyForTab(tabId, windowId, "start")] && true) || false;
 }
 
-var startTrackingTabTime = (tabId) => {
-    chrome.tabs.get(tabId, (tab) => {
-        // preserve this tab data for future
-        lastActiveTabData.tabId = tab.id;
-        lastActiveTabData.windowId = tab.windowId;
-        lastActiveTabData.hostName = (tab.url && new URL(tab.url).host) || "";
+var startTrackingTabTime = (tab) => {
+    // preserve this tab data for future
+    lastActiveTabData.tabId = tab.id;
+    lastActiveTabData.windowId = tab.windowId;
+    lastActiveTabData.hostName = (tab.url && new URL(tab.url).host) || "";
 
-        var start_key = getStorageKeyForTab(tab.id, tab.windowId, "start");
-        chrome.storage.sync[start_key] = new Date();
+    var start_key = getStorageKeyForTab(tab.id, tab.windowId, "start");
+    chrome.storage.sync[start_key] = new Date();
+}
+
+var startTrackingTabTimeById = (tabId) => {
+    chrome.tabs.get(tabId, (tab) => {
+        startTrackingTabTime(tab);
     });
 }
 
@@ -164,10 +169,11 @@ var startTrackingActiveTabTime = () => {
         if (!activeTab)
             return console.error("active tab was null");
 
-        startTrackingTabTime(activeTab.id);
+        startTrackingTabTime(activeTab);
     });
 }
 
+// Completed web navigation, so we need to start a time track
 chrome.webNavigation.onCommitted.addListener((details) => {
     // We are interested only in the top frame
     if (details.frameId != 0) return;
@@ -176,7 +182,13 @@ chrome.webNavigation.onCommitted.addListener((details) => {
     // Navigated within the same host, so skip the tracking
     if (new URL(details.url).hostname == lastActiveTabData.hostName) return;
 
-    startTrackingTabTime(details.tabId);
+    chrome.tabs.get(details.tabId, (tab) => {
+        // start tracking only if navigated inside the active tab
+        // (not middle-mouse click, etc)
+        if (tab.active) {
+            startTrackingTabTime(tab.id);
+        }
+    });
 });
 
 // This event is fired when we havigate to a different page within one tab 
@@ -198,22 +210,25 @@ chrome.webNavigation.onBeforeNavigate.addListener((evt) => {
 
 });
 
-// Start the clock when tab has become active
+// start the clock when a tab has become active
 chrome.tabs.onActivated.addListener((activeInfo) => {
-    // Collect data from the previous tab
+    // get and collect data from the previous last active tab
     chrome.tabs.get(lastActiveTabData.tabId, (lastActiveTab) => {
-        // tab will be empty in case it was removed
-        if (!lastActiveTab) return;
-        // collect data
-        collectTabData(lastActiveTab);
+        // get the new tab
+        chrome.tabs.get(activeInfo.tabId, (newTab) => {
+            // if we switched to a tab with the same host name as prev tab
+            //  => ignore the threshold for elapsed ms == it means we are in the same session / hostname
+            var ignoreThreshold = new URL(newTab.url).hostname == lastActiveTabData.hostName;
+            // lastActiveTab will be null if it was removed and its data was collected in the onRemoved
+            if (lastActiveTab) {
+                collectTabData(lastActiveTab, ignoreThreshold);
+            }
+            // start tracking activated tab
+            startTrackingTabTime(newTab);
+        });
     });
-    startTrackingTabTime(activeInfo.tabId);
 });
 
-// chrome.tabs.onSelectionChanged.addListener((tabId, selectInfo) => {
-//     console.log(tabId);
-//     console.log(selectInfo);
-// });
 
 chrome.tabs.onRemoved.addListener((tabId, removeInfo) => {
     // If user has closed the tab that was last active
@@ -228,7 +243,7 @@ chrome.idle.onStateChanged.addListener((newState) => {
     if (newState == "active") {
         // window has been activated
         if (!isTracking(lastActiveTabData.windowId, lastActiveTabData.tabId)) {
-            startTrackingTabTime(lastActiveTabData.tabId);
+            startTrackingActiveTabTime();
         }
     } else {
         // The pc is locked so we can flush the data
