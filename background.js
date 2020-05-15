@@ -186,7 +186,7 @@ chrome.webNavigation.onCommitted.addListener((details) => {
         // start tracking only if navigated inside the active tab
         // (not middle-mouse click, etc)
         if (tab.active) {
-            startTrackingTabTime(tab.id);
+            startTrackingTabTime(tab);
         }
     });
 });
