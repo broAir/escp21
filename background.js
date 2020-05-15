@@ -212,6 +212,11 @@ chrome.webNavigation.onBeforeNavigate.addListener((evt) => {
 
 // start the clock when a tab has become active
 chrome.tabs.onActivated.addListener((activeInfo) => {
+    // something is wrong - restart tracking
+    if (lastActiveTabData.tabId < 0) {
+        // start tracking activated tab
+        startTrackingTabTimeById(activeInfo.tabId);
+    }
     // get and collect data from the previous last active tab
     chrome.tabs.get(lastActiveTabData.tabId, (lastActiveTab) => {
         // get the new tab
